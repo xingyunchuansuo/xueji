@@ -3,20 +3,21 @@ import io
 import tkinter as tk
 import json
 
-
-
-def load_from_file(filename="students.json"):
-    try:
-        with open(filename, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
-
-def save_to_file(students_data, filename="students.json"):
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(students_data, f, ensure_ascii=False, indent=2)
-
 def open_main_window(username):
+
+    def load_from_file():
+        filename = f"students_{username}.json"
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return []
+
+    def save_to_file(students_data):
+        filename = f"students_{username}.json"
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(students_data, f, ensure_ascii=False, indent=2)
+
     students = load_from_file()
 
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
