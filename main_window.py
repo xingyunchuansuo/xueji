@@ -228,14 +228,24 @@ def open_main_window(username):
                     found =True
                     prompt = f"学生{stu['name']},当前成绩{stu['score']}分,请给出学习建议。"
                     try:
-                        response = requests.post("https://httpbin.org/post",
-                                                json={"prompt":prompt},
-                                                timeout=5
-                        )
+                        response = requests.post("https://api.deepseek.com/v1/chat/completions",
+                                                 headers={
+                                                     "Authorization": "Bearer sk-90e14be38edc4e9481d2e139e6cd438c",
+                                                     "Content-Type": "application/json"
+                                                 },
+                                                json={"model": "deepseek-chat",
+                                                        "messages": [
+                                                            {"role": "system", "content": "你是一位资深学习教练,请根据学生成绩给出鼓励和具体的学习建议。你的建议应该包含:1.对当前成绩的客观评价 2.具体可操作的改进方向 3.鼓励性的话语。"},
+                                                                {"role": "user", "content": prompt}
+                                                         ],
+                                                         "temperature":0.7,
+                                                         "max_tokens":500
+                                                      },
+                                                timeout=15
+                                      )
                         if response.status_code==200:
                             data = response.json()
-                            ai_reply = f"AI已收到你的问题:{data['json']['prompt']}\n\n"
-                            ai_reply += "(这是模拟AI回复。接入真实API后,这里会显示真正的学习建议。)"
+                            ai_reply = data['choices'][0]['message']['content']
                         else:
                             ai_reply = f"API调取失败,状态码: {response.status_code}"
                     except Exception as e:
