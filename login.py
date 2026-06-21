@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 import os
+from main_window import open_main_window
 
 USERS_FILE = "users.json"
 
@@ -34,6 +35,8 @@ def login():
             found = True
             if password == user['password']:
                 messagebox.showinfo("欢迎回来", f"欢迎回来，{username}")
+                root.destroy()
+                open_main_window(username)
             else:
                 messagebox.showwarning("密码错误", "请重新输入密码")
             break
@@ -43,7 +46,8 @@ def login():
         users.append(new_user)
         save_users(users) 
         messagebox.showinfo("欢迎", f"已为你创建新账号：{username}")
-
+        root.destroy()
+        open_main_window(username)
     print(f"用户 {username} 登录成功")
 
 
