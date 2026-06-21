@@ -2,6 +2,7 @@ import sys
 import io
 import tkinter as tk
 import json
+import requests
 
 def open_main_window(username):
 
@@ -207,6 +208,51 @@ def open_main_window(username):
             
 
 
+    def open_ai_window():
+        ai_win = tk.Toplevel(root)
+        ai_win.title("AI学习建议")
+        ai_win.geometry("500x400")
+
+        tk.Label(ai_win,text="输入学生学号:",font=("微软雅黑",10)).pack(pady=10)
+        entry_sid = tk.Entry(ai_win,width=30)
+        entry_sid.pack(pady=5)
+
+        result_text = tk.Text(ai_win,width = 45,height=12)
+        result_text.pack(pady=10)
+
+        def generate_advice():
+            sid = entry_sid.get()
+            found =False
+            for stu in students:
+                if sid == stu['sid']:
+                    found =True
+                    prompt = f"学生{stu['name']},当前成绩{stu['score']}分,请给出学习建议。"
+                    try:
+                        response = requests.post("https://httpbin.org/post",
+                                                json={"prompt":prompt},
+                                                timeout=5
+                        )
+                        if response.status_code==200:
+                            data = response.json()
+                            ai_reply = f"AI已收到你的问题:{data['json']['prompt']}\n\n"
+                            ai_reply += "(这是模拟AI回复。接入真实API后,这里会显示真正的学习建议。)"
+                        else:
+                            ai_reply = f"API调取失败,状态码: {response.status_code}"
+                    except Exception as e:
+                        ai_reply = f"网络请求出错：{str(e)}"
+                    result_text.delete(1.0,tk.END)
+                    result_text.insert(tk.END,f"学生姓名:{stu['name']}\n")
+                    result_text.insert(tk.END,f"当前成绩:{stu['score']}分\n\n")
+                    result_text.insert(tk.END,ai_reply)
+                    break
+            if not found:
+                result_text.delete(1.0,tk.END)
+                result_text.insert(tk.END,f"未找到学号为 {sid} 的学生。")
+
+        tk.Button(ai_win,text="生成建议",command=generate_advice,font=("微软雅黑",15)).pack(pady=10)
+
+
+
     title_label = tk.Label(root, text="学生信息管理系统", font=("微软雅黑", 16))
     title_label.pack(pady=20)
 
@@ -227,6 +273,9 @@ def open_main_window(username):
 
     btn_delete = tk.Button(root, text="删除学生信息", width=20, command=open_delete_window)
     btn_delete.pack(pady=5)
+
+    btn_ai = tk.Button(root,text="AI学习建议",width=20,command=open_ai_window)
+    btn_ai.pack(pady=5)
 
     def on_closing():
         save_to_file(students)
