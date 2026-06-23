@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 
 
 def open_main_window(username):
-
+    
+    #加载函数
     def load_from_file():
         filename = f"students_{username}.json"
         try:
@@ -17,6 +18,7 @@ def open_main_window(username):
         except FileNotFoundError:
             return []
 
+    #保存函数
     def save_to_file(data):
         filename = f"students_{username}.json"
         with open(filename, "w", encoding="utf-8") as f:
@@ -120,7 +122,7 @@ def open_main_window(username):
         def open_sort_window():
             sort_win = tk.Toplevel(manage_win)
             sort_win.title("成绩排序")
-            sort_win.geometry("400x250")
+            sort_win.geometry("400x350")
             tk.Label(sort_win, text="输入要排序的科目:", font=("微软雅黑", 10)).pack(pady=10)
             entry_subject = tk.Entry(sort_win, width=30)
             entry_subject.pack(pady=5)
@@ -146,11 +148,11 @@ def open_main_window(username):
             modify_win = tk.Toplevel(manage_win)
             modify_win.title("修改成绩")
             modify_win.geometry("500x400")
-            
+
             tk.Label(modify_win, text="输入科目名称:", font=("微软雅黑", 10)).pack(pady=5)
             entry_subject = tk.Entry(modify_win, width=25)
             entry_subject.pack(pady=5)
-            
+
             result_text = tk.Text(modify_win, width=55, height=8)
             result_text.pack(pady=10)
 
@@ -161,22 +163,20 @@ def open_main_window(username):
                 item = find_subject(subject)
                 if item:
                     result_text.insert(tk.END, f"科目 '{subject}' 的历史记录：\n")
-                    for i, r in enumerate(item['history']):
+                    current_date = ""
+                    daily_index = 0
+                    for r in item['history']:
                         date = r['time'][:10]
-                        label = f"{date}-{i+1}"
+                        if date != current_date:
+                            current_date = date
+                            daily_index = 1
+                        else:
+                            daily_index += 1
+                        label = f"{date}-{daily_index}"
                         result_text.insert(tk.END, f"  {label}  成绩：{r['score']}分\n")
                 else:
                     result_text.insert(tk.END, f"未找到科目 '{subject}' 的成绩记录。")
                 result_text.config(state="disabled")
-
-            tk.Button(modify_win, text="查询记录", command=query_records, width=15).pack(pady=5)
-            
-            tk.Label(modify_win, text="输入要修改的记录标识(如 2026-06-22-1):", font=("微软雅黑", 10)).pack(pady=5)
-            entry_label = tk.Entry(modify_win, width=25)
-            entry_label.pack(pady=5)
-            tk.Label(modify_win, text="新成绩:", font=("微软雅黑", 10)).pack(pady=5)
-            entry_score = tk.Entry(modify_win, width=25)
-            entry_score.pack(pady=5)
 
             def do_modify():
                 subject = entry_subject.get()
@@ -205,25 +205,40 @@ def open_main_window(username):
                 except ValueError:
                     return
                 
-                count = 0
+                current_date = ""
+                daily_index = 0
                 found = False
                 for idx, r in enumerate(item['history']):
-                    if r['time'][:10] == target_date:
-                        count += 1
-                        if count == target_num:
-                            item['history'][idx]['score'] = new_score
-                            found = True
-                            result_text.config(state="normal")
-                            result_text.delete(1.0, tk.END)
-                            result_text.insert(tk.END, f"修改成功！\n{user_input}  新成绩：{new_score}分")
-                            result_text.config(state="disabled")
-                            break
+                    date = r['time'][:10]
+                    if date != current_date:
+                        current_date = date
+                        daily_index = 1
+                    else:
+                        daily_index += 1
+                    if date == target_date and daily_index == target_num:
+                        item['history'][idx]['score'] = new_score
+                        found = True
+                        result_text.config(state="normal")
+                        result_text.delete(1.0, tk.END)
+                        result_text.insert(tk.END, f"修改成功！\n{user_input}  新成绩：{new_score}分")
+                        result_text.config(state="disabled")
+                        break
                 if not found:
                     result_text.config(state="normal")
                     result_text.delete(1.0, tk.END)
                     result_text.insert(tk.END, "未找到匹配的记录。")
                     result_text.config(state="disabled")
 
+            tk.Button(modify_win, text="查询记录", command=query_records, width=15).pack(pady=5)
+            
+            tk.Label(modify_win, text="输入要修改的记录标识(如 2026-06-22-1):", font=("微软雅黑", 10)).pack(pady=5)
+            entry_label = tk.Entry(modify_win, width=25)
+            entry_label.pack(pady=5)
+            
+            tk.Label(modify_win, text="新成绩:", font=("微软雅黑", 10)).pack(pady=5)
+            entry_score = tk.Entry(modify_win, width=25)
+            entry_score.pack(pady=5)
+            
             tk.Button(modify_win, text="确认修改", command=do_modify, width=15).pack(pady=5)
 
         # 删除成绩窗口
@@ -239,7 +254,6 @@ def open_main_window(username):
             result_text = tk.Text(delete_win, width=55, height=8)
             result_text.pack(pady=10)
 
-            # 查询函数定义必须放在按钮之前
             def query_records():
                 result_text.config(state="normal")
                 result_text.delete(1.0, tk.END)
@@ -247,19 +261,20 @@ def open_main_window(username):
                 item = find_subject(subject)
                 if item:
                     result_text.insert(tk.END, f"科目 '{subject}' 的历史记录：\n")
-                    for i, r in enumerate(item['history']):
+                    current_date = ""
+                    daily_index = 0
+                    for r in item['history']:
                         date = r['time'][:10]
-                        label = f"{date}-{i+1}"
+                        if date != current_date:
+                            current_date = date
+                            daily_index = 1
+                        else:
+                            daily_index += 1
+                        label = f"{date}-{daily_index}"
                         result_text.insert(tk.END, f"  {label}  成绩：{r['score']}分\n")
                 else:
                     result_text.insert(tk.END, f"未找到科目 '{subject}' 的成绩记录。")
                 result_text.config(state="disabled")
-
-            tk.Button(delete_win, text="查询记录", command=query_records, width=15).pack(pady=5)
-            
-            tk.Label(delete_win, text="输入要删除的记录标识(如 2026-06-22-1):", font=("微软雅黑", 10)).pack(pady=5)
-            entry_label = tk.Entry(delete_win, width=25)
-            entry_label.pack(pady=5)
 
             def do_delete():
                 subject = entry_subject.get()
@@ -283,26 +298,37 @@ def open_main_window(username):
                     result_text.config(state="disabled")
                     return
                 
-                count = 0
+                current_date = ""
+                daily_index = 0
                 found = False
                 for idx, r in enumerate(item['history']):
-                    if r['time'][:10] == target_date:
-                        count += 1
-                        if count == target_num:
-                            removed = item['history'].pop(idx)
-                            if not item['history']:
-                                subject_records.remove(item)
-                            found = True
-                            result_text.config(state="normal")
-                            result_text.delete(1.0, tk.END)
-                            result_text.insert(tk.END, f"已删除：{subject} {removed['score']}分")
-                            result_text.config(state="disabled")
-                            break
+                    date = r['time'][:10]
+                    if date != current_date:
+                        current_date = date
+                        daily_index = 1
+                    else:
+                        daily_index += 1
+                    if date == target_date and daily_index == target_num:
+                        removed = item['history'].pop(idx)
+                        if not item['history']:
+                            subject_records.remove(item)
+                        found = True
+                        result_text.config(state="normal")
+                        result_text.delete(1.0, tk.END)
+                        result_text.insert(tk.END, f"已删除：{subject} {removed['score']}分")
+                        result_text.config(state="disabled")
+                        break
                 if not found:
                     result_text.config(state="normal")
                     result_text.delete(1.0, tk.END)
                     result_text.insert(tk.END, "未找到匹配的记录。")
                     result_text.config(state="disabled")
+
+            tk.Button(delete_win, text="查询记录", command=query_records, width=15).pack(pady=5)
+            
+            tk.Label(delete_win, text="输入要删除的记录标识(如 2026-06-22-1):", font=("微软雅黑", 10)).pack(pady=5)
+            entry_label = tk.Entry(delete_win, width=25)
+            entry_label.pack(pady=5)
 
             tk.Button(delete_win, text="确认删除", command=do_delete, width=15).pack(pady=5)
 
