@@ -4,6 +4,8 @@ import tkinter as tk
 import json
 import requests
 from datetime import datetime
+import matplotlib.pyplot as plt
+
 
 def open_main_window(username):
 
@@ -324,17 +326,19 @@ def open_main_window(username):
         result_text.pack(pady=10)
 
         def generate_advice():
+            btn_ai_analysis.config(state=tk.DISABLED)
             subject = entry_subject.get()
             item = find_subject(subject)
             if not item:
                 result_text.delete(1.0, tk.END)
                 result_text.insert(tk.END, f"未找到科目 '{subject}' 的成绩记录。")
+                btn_ai_analysis.config(state=tk.NORMAL)
                 return
             scores = [r['score'] for r in item['history']]
             prompt = f"我最近在科目'{subject}'上的成绩记录如下：\n"
             for r in item['history']:
                 prompt += f"- {r['time']}: {r['score']}分\n"
-            prompt += "\n请根据以上成绩变化趋势，给出学习建议（包括趋势分析、薄弱点、改进方向、鼓励的话语）。"
+            prompt += "\n请根据以上成绩变化趋势,给出学习建议(包括趋势分析、薄弱点、改进方向、鼓励的话语)。"
             try:
                 response = requests.post(
                     "https://api.deepseek.com/v1/chat/completions",
@@ -345,7 +349,7 @@ def open_main_window(username):
                     json={
                         "model": "deepseek-chat",
                         "messages": [
-                            {"role": "system", "content": "你是一位资深学习教练，擅长根据成绩变化趋势给出具体学习建议。"},
+                            {"role": "system", "content": "你是一位资深学习顾问，擅长根据成绩变化趋势给出具体学习建议。"},
                             {"role": "user", "content": prompt}
                         ],
                         "temperature": 0.7,
@@ -364,18 +368,112 @@ def open_main_window(username):
             result_text.insert(tk.END, f"科目：{subject}\n")
             result_text.insert(tk.END, f"历史成绩：{', '.join(map(str, scores))}\n\n")
             result_text.insert(tk.END, ai_reply)
+            btn_ai_analysis.config(state=tk.NORMAL)
 
-        tk.Button(ai_win, text="生成建议", command=generate_advice, font=("微软雅黑", 15)).pack(pady=10)
+        btn_ai_analysis = tk.Button(ai_win, text="生成建议", command=generate_advice, font=("微软雅黑", 15))
+        btn_ai_analysis.pack(pady=10)
 
 
-    #3. 趋势追踪功能（预留）
+    #3. 趋势追踪功能
     def trend_ai_window():
         trend_win = tk.Toplevel(root)
         trend_win.title("趋势追踪")
-        trend_win.geometry("400x300")
-        tk.Label(trend_win, text="成绩趋势图表功能开发中...", font=("微软雅黑", 12)).pack(pady=50)
-        tk.Label(trend_win, text="即将支持按科目查看成绩变化曲线", font=("微软雅黑", 10)).pack(pady=10)
+        trend_win.geometry("800x750")
 
+        tk.Label(trend_win, text="输入科目(绘制成绩趋势图)", font=("微软雅黑", 10)).pack(pady=5)
+        entry_subject = tk.Entry(trend_win, width=30)
+        entry_subject.pack(pady=5)
+
+        canvas_frame = tk.Frame(trend_win)
+
+        result_text = tk.Text(trend_win, width=70, height=8)
+
+        def create_trend_chart():
+            for widget in canvas_frame.winfo_children():
+                widget.destroy()
+
+            subject = entry_subject.get()
+            item = find_subject(subject)
+            if not item:
+                tk.messagebox.showwarning("提示", f"未找到科目 '{subject}' 的成绩记录。")
+                return
+
+            scores = []
+            times = []
+            for i, r in enumerate(item['history']):
+                scores.append(r['score'])
+                times.append(f"第{i+1}次")
+
+            plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
+            plt.rcParams['axes.unicode_minus'] = False
+
+            from matplotlib.figure import Figure
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+            fig = Figure(figsize=(6, 4), dpi=100)
+            ax = fig.add_subplot(111)
+            ax.plot(times, scores, marker='o', color='blue')
+            ax.set_title(f"{subject}成绩趋势")
+            ax.set_xlabel("考试次数")
+            ax.set_ylabel("成绩")
+
+            canvas = FigureCanvasTkAgg(fig, master=canvas_frame)
+            canvas.draw()
+            canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        def generate_advice():
+            btn_ai_analysis.config(state=tk.DISABLED)
+            subject = entry_subject.get()
+            item = find_subject(subject)
+            if not item:
+                result_text.delete(1.0, tk.END)
+                result_text.insert(tk.END, f"未找到科目 '{subject}' 的成绩记录。")
+                btn_ai_analysis.config(state=tk.NORMAL)
+                return
+            scores = [r['score'] for r in item['history']]
+            prompt = f"我最近在科目'{subject}'上的成绩记录如下：\n"
+            for r in item['history']:
+                prompt += f"- {r['time']}: {r['score']}分\n"
+            prompt += "\n请根据以上成绩变化趋势,给出学习建议(包括趋势分析、薄弱点、改进方向、鼓励的话语)。"
+            try:
+                response = requests.post(
+                    "https://api.deepseek.com/v1/chat/completions",
+                    headers={
+                        "Authorization": "Bearer sk-90e14be38edc4e9481d2e139e6cd438c",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "deepseek-chat",
+                        "messages": [
+                            {"role": "system", "content": "你是一位资深学习顾问，擅长根据成绩变化趋势给出具体学习建议。"},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 500
+                    },
+                    timeout=15
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    ai_reply = data['choices'][0]['message']['content']
+                else:
+                    ai_reply = f"API调取失败,状态码: {response.status_code}"
+            except Exception as e:
+                ai_reply = f"网络请求出错：{str(e)}"
+            result_text.delete(1.0, tk.END)
+            result_text.insert(tk.END, f"科目：{subject}\n")
+            result_text.insert(tk.END, f"历史成绩：{', '.join(map(str, scores))}\n\n")
+            result_text.insert(tk.END, ai_reply)
+            btn_ai_analysis.config(state=tk.NORMAL)
+
+        btn_frame = tk.Frame(trend_win)
+        btn_frame.pack(pady=10)
+        tk.Button(btn_frame, text="生成趋势图", command=create_trend_chart, font=("微软雅黑", 10)).pack(side=tk.LEFT, padx=10)
+        btn_ai_analysis = tk.Button(btn_frame, text="生成AI分析", command=generate_advice, font=("微软雅黑", 10))
+        btn_ai_analysis.pack(side=tk.LEFT, padx=10)
+
+        canvas_frame.pack(pady=10, fill=tk.BOTH, expand=True)
+        result_text.pack(pady=10, fill=tk.X)
 
     #4. 本地存储功能
     def store_data():
